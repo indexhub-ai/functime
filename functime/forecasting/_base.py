@@ -4,6 +4,7 @@ from typing import Literal, Optional, Union
 import pandas as pd
 import polars as pl
 import pyarrow as pa
+from functime.base.stub import _Stub
 
 from functime.io._serialize import deserialize_bytes, serialize_bytes
 from functime.io.client import FunctimeH2Client
@@ -26,10 +27,10 @@ SUPPORTED_FORECASTERS = [
 ]
 
 
-class ForecasterClient:
+class ForecasterClient(_Stub):
     """Functime forecaster client"""
 
-    _stub_id: Optional[str] = None
+    _stub_id: Union[str, None] = None
 
     def __init__(self, **kwargs):
         self.model_kwargs = kwargs
