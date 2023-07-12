@@ -1,25 +1,24 @@
+import logging
+import os
+from typing import List, Tuple
+
+import numpy as np
 import polars as pl
 import polars.selectors as ps
 import pytest
-import logging
-import os
-import numpy as np
-
-from typing import List, Tuple
-from functime.preprocessing import reindex, time_to_arange
-from functime.plotting import plot_scatter
 from functime_backend.classification import HindsightClassifier
 from functime_backend.regression import HindsightRegressor
-from functime_backend.umap import auto_umap
-
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     mean_absolute_error,
-    mean_squared_error
+    mean_squared_error,
 )
-from sklearn.linear_model import LogisticRegression, Ridge
 
+from functime.plotting import plot_scatter
+from functime.preprocessing import reindex, time_to_arange
+from functime.umap import auto_umap
 
 # Test split size
 TEST_FRACTION = 0.20
@@ -29,17 +28,13 @@ STORAGE_PATH = os.environ.get("EMBEDDINGS_STORAGE_PATH", ".data/embs")
 FIGURES_PATH = os.environ.get("EMBEDDINGS_FIGURES_PATH", "benchmarks/figures")
 
 # Classification metrics
-CLASSIFICATION_METRICS = [
-    accuracy_score,
-    balanced_accuracy_score
-]
-REGRESSION_METRICS = [
-    mean_absolute_error,
-    mean_squared_error
-]
+CLASSIFICATION_METRICS = [accuracy_score, balanced_accuracy_score]
+REGRESSION_METRICS = [mean_absolute_error, mean_squared_error]
 
 
-def plot_embeddings(X: pl.DataFrame, y: pl.DataFrame, n_neighbors: int, file_name: str, dtype=None):
+def plot_embeddings(
+    X: pl.DataFrame, y: pl.DataFrame, n_neighbors: int, file_name: str, dtype=None
+):
     # Dimensionality reduction
     embs = auto_umap(X=X, y=y, n_dims=3, n_neighbors=n_neighbors)
     # Export embedding plots
@@ -53,7 +48,7 @@ def preview_dataset(
     X_train: pl.DataFrame,
     X_test: pl.DataFrame,
     y_train: pl.DataFrame,
-    y_test: pl.DataFrame
+    y_test: pl.DataFrame,
 ):
     """Log memory usage and first 10 rows given train-split splits."""
     logging.info("🔍 Preview %s dataset", name)
@@ -73,10 +68,8 @@ def split_iid_data(
     data: pl.DataFrame,
     label_cols: List[str],
     test_size: float = TEST_FRACTION,
-    seed: int = 42
+    seed: int = 42,
 ) -> Tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame, pl.DataFrame]:
-    
-
     # Sample session ids
     entity_col, time_col = data.columns[:2]
     entities = set(data.get_column(entity_col).unique())
@@ -88,10 +81,16 @@ def split_iid_data(
     data = data.lazy()
     # Cannot combine 'streaming' with 'common_subplan_elimination'. CSE will be turned off.
     # NOTE: Filter does not maintain order!
-    X_y_train, X_y_test = pl.collect_all([
-        data.filter(~pl.col(entity_col).is_in(entity_ids)).sort([entity_col, time_col]),
-        data.filter(pl.col(entity_col).is_in(entity_ids)).sort([entity_col, time_col])
-    ])
+    X_y_train, X_y_test = pl.collect_all(
+        [
+            data.filter(~pl.col(entity_col).is_in(entity_ids)).sort(
+                [entity_col, time_col]
+            ),
+            data.filter(pl.col(entity_col).is_in(entity_ids)).sort(
+                [entity_col, time_col]
+            ),
+        ]
+    )
 
     # Split into X, y
     exog = [entity_col, time_col, pl.all().exclude([entity_col, time_col, *label_cols])]
@@ -130,7 +129,14 @@ def parkinsons_dataset():
         # Ignore collinear features
         .select(pl.all().exclude(["disease_duration", "MMSE", "NAART"]))
         .filter(pl.col("timestamp") < max_timestamp)
-        .select(["subject", "timestamp", ps.numeric().exclude("timestamp"), (pl.col("session") == "off").alias("is_control").cast(pl.Int8)])
+        .select(
+            [
+                "subject",
+                "timestamp",
+                ps.numeric().exclude("timestamp"),
+                (pl.col("session") == "off").alias("is_control").cast(pl.Int8),
+            ]
+        )
         .collect(streaming=True)
     )
     X_train, X_test, y_train, y_test = split_iid_data(data, label_cols=[label_col])
@@ -142,6 +148,44 @@ def parkinsons_dataset():
             y=data.select(label_col).to_numpy(),
             n_neighbors=5,
             file_name="parkinsons",
+        )
+
+    return X_train, X_test, y_train, y_test
+
+
+@pytest.fixture
+def drone_dataset():
+    """Drone traffic monitoring dataset."""
+    label_col = "signal_violation_behavior"
+
+    entity_col = "track_id"
+    time_col = "frame_id"
+    label_map = {
+        "no_violation": "no_violation",
+        "outside_crossing": "no_violation",
+        "yellow_light": "violation",
+        "red_light": "violation",
+    }
+
+    data = (
+        pl.read_parquet("data/drone_traffic.parquet")
+        .select(pl.all().exclude(["timestamp_ms", "agent_type"]))
+        .with_columns(pl.col(label_col).apply(lambda x: label_map[x]))
+        .sort(entity_col, time_col)
+        .pipe(reindex)
+        .fill_null(0)
+        .pipe(time_to_arange())
+        .collect(streaming=True)
+    )
+    X_train, X_test, y_train, y_test = split_iid_data(data, label_cols=[label_col])
+    preview_dataset("drone_traffic", X_train, X_test, y_train, y_test)
+
+    if not os.path.exists(f"{FIGURES_PATH}/drone_traffic.html"):
+        plot_embeddings(
+            X=data.select(data.columns[2:]).drop(label_col).to_numpy(),
+            y=data.select(label_col).to_numpy(),
+            n_neighbors=5,
+            file_name="drone_traffic",
         )
 
     return X_train, X_test, y_train, y_test
@@ -171,7 +215,7 @@ def behacom_dataset():
     """Hourly user laptop behavior every week.
 
     Time-series regression. Predict current app CPU usage at each timestamp.
-    Compare temporal embeddings accuracy versus 
+    Compare temporal embeddings accuracy versus
 
     11 users, ~12,000 dimensions (e.g. RAM usage, CPU usage, mouse location), ~5000 timestamps.
     Drop users with less than one week of observations: i.e. users [2, 5].
@@ -208,7 +252,7 @@ def behacom_dataset():
             y=data.select(label_col).to_numpy(),
             n_neighbors=200,
             file_name="behacom",
-            dtype=np.float32
+            dtype=np.float32,
         )
 
     return X_train, X_test, y_train, y_test
@@ -253,7 +297,7 @@ def elearn_dataset():
     time_col = "index"
     label_cols = [f"q{i+1}" for i in range(18)]
     sample_fraction = 0.1
-    cache_path = f".data/elearn.arrow"
+    cache_path = ".data/elearn.arrow"
 
     if os.path.exists(cache_path):
         data = pl.read_ipc(cache_path)
@@ -263,8 +307,15 @@ def elearn_dataset():
             .pivot(index="session_id", columns="question_id", values="correct")
             .select(["session_id", pl.all().exclude("session_id").prefix("q")])
         )
-        sampled_session_ids = labels.get_column("session_id").unique().sample(fraction=sample_fraction)
-        logging.info("🎲 Selected %s / %s sessions (%.2f)", len(sampled_session_ids), len(labels), sample_fraction)
+        sampled_session_ids = (
+            labels.get_column("session_id").unique().sample(fraction=sample_fraction)
+        )
+        logging.info(
+            "🎲 Selected %s / %s sessions (%.2f)",
+            len(sampled_session_ids),
+            len(labels),
+            sample_fraction,
+        )
         data = (
             pl.scan_parquet("data/elearn.parquet")
             # Sample session IDs
@@ -275,11 +326,16 @@ def elearn_dataset():
             # Join with multioutput labels
             .join(labels.lazy(), how="left", on="session_id")
             # Forward fill
-            .select([
-                pl.col(entity_col),
-                pl.col(time_col),
-                pl.all().exclude([entity_col, time_col]).forward_fill().fill_null(0)
-            ])
+            .select(
+                [
+                    pl.col(entity_col),
+                    pl.col(time_col),
+                    pl.all()
+                    .exclude([entity_col, time_col])
+                    .forward_fill()
+                    .fill_null(0),
+                ]
+            )
             .collect(streaming=True)
             .pipe(reindex)
             .unique(["user", "session_id"])
@@ -326,11 +382,13 @@ def test_regression(embedder, behacom_dataset, behacom_baseline, regressor):
     )
     logging.info("💯 Hindsight Score: %s", scores)
     for metric_name in scores.keys():
-        assert scores[metric_name] > parkinsons_baseline[metric_name]    
+        assert scores[metric_name] > parkinsons_baseline[metric_name]
 
 
 @pytest.mark.parametrize("embedder", ["many", "multi"])
-def test_binary_classification(embedder, parkinsons_dataset, parkinsons_baseline, classifier):
+def test_binary_classification(
+    embedder, parkinsons_dataset, parkinsons_baseline, classifier
+):
     X_train, X_test, y_train, y_test = parkinsons_dataset
     baseline = parkinsons_baseline
     logging.info("💯 Baseline Score: %s", baseline)
@@ -350,7 +408,7 @@ def test_binary_classification(embedder, parkinsons_dataset, parkinsons_baseline
     )
     logging.info("💯 Hindsight Score: %s", scores)
     for metric_name in scores.keys():
-        assert scores[metric_name] > parkinsons_baseline[metric_name]    
+        assert scores[metric_name] > parkinsons_baseline[metric_name]
 
 
 def test_multioutput_classification(elearn_dataset, classifier):
@@ -361,5 +419,28 @@ def test_multioutput_classification(elearn_dataset, classifier):
         random_state=42,
     )
     model.fit(X=X_train, y=y_train)
-    score = model.score(X=X_test, y=y_test, keep_pred=True, metrics=CLASSIFICATION_METRICS)
+    score = model.score(
+        X=X_test, y=y_test, keep_pred=True, metrics=CLASSIFICATION_METRICS
+    )
     assert score > 0.9
+
+
+@pytest.mark.parametrize("embedder", ["many"])
+def test_drone_binary_classification(embedder, drone_dataset, classifier):
+    X_train, X_test, y_train, y_test = drone_dataset
+    print(X_train, X_test, y_train, y_test)
+    model = HindsightClassifier(
+        estimator=classifier,
+        embedder=embedder,
+        storage_path=STORAGE_PATH,
+        random_state=42,
+    )
+    model.fit(X=X_train, y=y_train)
+    scores = model.score(X=X_test, y=y_test, metrics=CLASSIFICATION_METRICS)["label"]
+    plot_embeddings(
+        X=model._tembs,
+        y=model._labels,
+        n_neighbors=200,
+        file_name=f"parkinsons_hindsight_{embedder}",
+    )
+    logging.info("💯 Hindsight Score: %s", scores)
