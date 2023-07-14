@@ -14,13 +14,12 @@
 
 ---
 w**functime** is a powerful [Python library]((https://pypi.org/project/functime/)) for production-ready AutoML forecasting and temporal embeddings.
-Forecasting and embeddings are run and deployed in **functime Cloud**, which is accessed via an scikit-learn API and command line interface.
 
 **functime** also comes with time-series [preprocessing](https://docs.functime.ai/ref/preprocessing/) (box-cox, differencing etc), cross-validation [splitters](https://docs.functime.ai/ref/cross-validation/) (expanding and sliding window), and forecast [metrics](https://docs.functime.ai/ref/metrics/) (MASE, SMAPE etc). All optimized as [lazy Polars](https://pola-rs.github.io/polars-book/user-guide/lazy/using/) transforms.
 
-Want to use **functime** for seamless time-series analytics across your data team
-Looking for fully-managed production-grade AI/ML forecasting and temporal embeddings?
-Book a [15 minute discovery call](https://calendly.com/functime-indexhub) to learn more about functime's Team / Enterprise plans.
+Want to use **functime** for seamless time-series predictive analytics across your data team?
+Looking for production-grade time-series AutoML in a serverless Cloud deployment?
+Book a [15 minute discovery call](https://calendly.com/functime-indexhub) to learn more about `functime` Enterprise.
 
 ## Highlights
 - **Fast:** Forecast 100,000 time series in seconds *on your laptop*
@@ -32,18 +31,11 @@ Book a [15 minute discovery call](https://calendly.com/functime-indexhub) to lea
 - Utilities to add calendar effects, special events (e.g. holidays), weather patterns, and economic trends
 - Supports recursive, direct, and ensemble forecast strategies
 
-**Note:** All preprocessors, time-series splitters, and forecasting metrics are implemented with [`Polars`](https://www.pola.rs/) and open-sourced under the Apache-2.0 license. Contributions are always welcome.
-
 ## Getting Started
-1. First, install `functime` via the [pip](https://pypi.org/project/functime) package manager.
+Install `functime` via the [pip](https://pypi.org/project/functime) package manager.
 ```bash
 pip install functime
 ```
-2. Then sign-up for a free `functime` Cloud account via the command-line interface (CLI).
-```bash
-functime login
-```
-3. That's it! You can execute time series predictions at scale using functime's `scikit-learn` fit-predict API.
 
 ### Forecasting
 
@@ -74,6 +66,8 @@ scores = mase(y_true=y_test, y_pred=y_pred, y_train=y_train)
 ```
 
 ### Classification
+
+Only available on `functime` Enterprise.
 
 ```python
 import polars as pl
@@ -108,6 +102,8 @@ accuracy = accuracy_score(predictions, y_test)
 
 ### Clustering
 
+Only available on `functime` Enterprise.
+
 ```python
 import functime
 import polars as pl
@@ -135,9 +131,12 @@ labels = estimator.predict(X)
 ```
 
 ## Deployment
-`functime` deploys and trains your forecasting models the moment you call any `.fit` method.
+
+Only available on `functime` Enterprise.
+
+Deploy and train forecasters the moment you call any `.fit` method.
 Run the `functime list` CLI command to list all deployed models.
-To view data and forecasts usage, run the `functime usage` CLI command.
+Finally, track data and forecasts usage using `functime usage` CLI command.
 
 ![Example CLI usage](static/gifs/functime_cli_usage.gif)
 

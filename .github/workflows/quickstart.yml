@@ -15,7 +15,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  quickstart-prod:
+  quickstart:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
@@ -30,35 +30,5 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install .
-      - name: Authenticate to functime Cloud
-        run: functime token set --token-id $TOKEN_ID --token-secret $TOKEN_SECRET  --no-verify
-        env:
-          TOKEN_ID: ${{ secrets.FUNCTIME__PROD__TOKEN_ID }}
-          TOKEN_SECRET: ${{ secrets.FUNCTIME__PROD__TOKEN_SECRET }}
-      - name: Run Quickstart
-        run: python docs/code/quickstart.py
-
-  quickstart-staging:
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-    runs-on: ubuntu-latest
-    env:
-      FUNCTIME_SERVER_URL: "https://descendant-ai--staging-functime-api-endpoint.modal.run"
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install .
-      - name: Authenticate to functime Cloud
-        run: functime token set --token-id $TOKEN_ID --token-secret $TOKEN_SECRET  --no-verify
-        env:
-          TOKEN_ID: ${{ secrets.FUNCTIME__STAGING__TOKEN_ID }}
-          TOKEN_SECRET: ${{ secrets.FUNCTIME__STAGING__TOKEN_SECRET }}
       - name: Run Quickstart
         run: python docs/code/quickstart.py

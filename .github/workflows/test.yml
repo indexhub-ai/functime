@@ -11,7 +11,7 @@ on:
   pull_request:
     types: [ review_requested ]
 jobs:
-  test-local:
+  test:
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10", "3.11"]
@@ -27,63 +27,4 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install ".[test]"
       - name: Test local functions
-        run: pytest tests -k "not test_forecasters" --benchmark-disable
-
-  test-prod:
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-    runs-on: ubuntu-latest
-    env:
-      TOKEN_ID: ${{ secrets.FUNCTIME__PROD__TOKEN_ID }}
-      TOKEN_SECRET: ${{ secrets.FUNCTIME__PROD__TOKEN_SECRET }}
-    steps:
-      - name: Install Git LFS
-        run: |
-          sudo apt-get update
-          sudo apt-get install git-lfs
-      - uses: actions/checkout@v3
-        with:
-          lfs: true
-      - name: Set up Python 3
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install ".[test]"
-      - name: Authenticate to functime Cloud
-        run: functime token set --token-id $TOKEN_ID --token-secret $TOKEN_SECRET  --no-verify
-      - name: Test Cloud functions
-        run: pytest tests -k "test_forecasters" --benchmark-disable
-
-  test-staging:
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-    runs-on: ubuntu-latest
-    env:
-      FUNCTIME_SERVER_URL: "https://descendant-ai--staging-functime-api-endpoint.modal.run"
-      TOKEN_ID: ${{ secrets.FUNCTIME__STAGING__TOKEN_ID }}
-      TOKEN_SECRET: ${{ secrets.FUNCTIME__STAGING__TOKEN_SECRET }}
-    steps:
-      - name: Install Git LFS
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y git-lfs
-      - uses: actions/checkout@v3
-        with:
-          lfs: true
-      - name: Set up Python 3
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install ".[test]"
-      - name: Authenticate to functime Cloud
-        run: functime token set --token-id $TOKEN_ID --token-secret $TOKEN_SECRET  --no-verify
-      - name: Test Cloud functions
-        run: pytest tests -k "test_forecasters" --benchmark-disable
+        run: pytest tests --benchmark-disable

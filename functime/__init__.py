@@ -1,1 +1,1 @@
-"Python client for functime"
+"functime: Time-series machine learning and embeddings at scale."
