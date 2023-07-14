@@ -358,6 +358,10 @@ class AutoForecaster(Forecaster):
             )
 
         return fit, predict_autoreg
+    
+    @property
+    def best_params(self):
+        return self.state.artifacts["best_params"]
 
     def backtest(
         self,
