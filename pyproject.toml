@@ -25,22 +25,25 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
-dependencies = [    
+dependencies = [
+    "catboost",
+    "flaml==1.2.4",
     "holidays",
-    "httpx[http2]",
+    "joblib",
+    "kaleido",
+    "lightgbm",
     "numpy",
     "pandas",
-    "kaleido",
-    "polars",
     "plotly",
+    "polars",
     "pyarrow",
-    "rich>=12.0.0",
-    "scipy",
-    "scikit-learn",
-    "umap-learn",
     "pynndescent==0.5.8",
-    "toml",
-    "typer>=0.6.1",
+    "rich>=12.0.0",
+    "scikit-learn",
+    "scipy",
+    "typing-extensions",
+    "umap-learn",
+    "xgboost",
 ]
 
 [project.scripts]
@@ -57,7 +60,6 @@ test = [
     "pytest-memray",
     "pytest-timeout",
     "pytest",
-    "scikit-learn",
     "fastapi",
 ]
 doc = ["mkdocs", "mkdocs-material", "mkdocstrings-python"]
