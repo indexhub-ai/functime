@@ -40,7 +40,6 @@ nav:
   - Embeddings: embeddings.md
   - API Reference:
     - forecasting: ref/forecasting.md
-    - auto_forecasting: ref/auto-forecasting.md
     - preprocessing: ref/preprocessing.md
     - feature_extraction: ref/feature-extraction.md
     - cross_validation: ref/cross-validation.md
