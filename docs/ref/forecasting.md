@@ -9,11 +9,11 @@ AutoML forecasters uses `FLAML` to optimize both hyperparameters and number of l
 
 All individual forecasters (e.g. `lasso` / `xgboost`) and AutoML forecasters (e.g. `auto_lasso` and `auto_xgboost`) implement the following API.
 
-## `Forecaster`
+## `forecaster`
 
 ::: functime.base.forecaster.Forecaster
 
-## `AutoForecaster`
+## `auto_forecaster`
 
 ::: functime.base.forecaster.AutoForecaster
 

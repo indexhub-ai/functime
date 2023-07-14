@@ -98,7 +98,7 @@ View the [full walkthrough](embeddings.md) on temporal embeddings with `functime
 ```python
 import polars as pl
 from functime.cross_validation import train_test_split
-from functime.forecasting import LightGBM
+from functime.forecasting import lightgbm
 from functime.metrics import mase
 
 # Load commodities price data
@@ -109,18 +109,20 @@ entity_col, time_col = y.columns[:2]
 y_train, y_test = y.pipe(train_test_split(test_size=3))
 
 # Fit-predict
-model = LightGBM(freq="1mo", lags=24, max_horizons=3, strategy="ensemble")
+model = lightgbm(freq="1mo", lags=24, max_horizons=3, strategy="ensemble")
 model.fit(y=y_train)
 y_pred = model.predict(fh=3)
 
 # functime ❤️ functional design
 # fit-predict in a single line
-y_pred = LightGBM(freq="1mo", lags=24)(y=y_train, fh=3)
+y_pred = lightgbm(freq="1mo", lags=24)(y=y_train, fh=3)
 
 # Score forecasts in parallel
 scores = mase(y_true=y_test, y_pred=y_pred, y_train=y_train)
 ```
 ### Classification
+
+Only available on `functime` Enterprise.
 
 The following dataset represents velocity measurements from two gunslingers (label 1 and label 2) over 150 time periods (columns t0, t1, ..., t149) over 75 trials (rows).
 In this example, we assign each sequence of measurement to one of the two gunsligners.
@@ -163,6 +165,8 @@ accuracy = accuracy_score(predictions, y_test)
 ```
 
 ### Clustering
+
+Only available on `functime` Enterprise.
 
 In this example, we cluster S&P 500 companies into groups with similar price patterns.
 

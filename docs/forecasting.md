@@ -46,11 +46,11 @@ X_train, X_test = train_test_split(test_size)(X)
 ??? info "Supported Forecast Metrics"
 
 ```python
-from functime.forecasting import LinearModel
+from functime.forecasting import linear_model
 from functime.metrics import mase
 
 # Fit
-forecaster = LinearModel(lags=24, freq="1mo")
+forecaster = linear_model(lags=24, freq="1mo")
 forecaster.fit(y=y_train)
 
 # Predict
@@ -86,9 +86,9 @@ scores = mase(y_true=y_test, y_pred=y_pred, y_train=y_train)
     You can also use any `forecaster` as a curried function to run fit-predict in a single line of code.
 
     ```python
-    from functime.forecasting import LinearModel
+    from functime.forecasting import linear_model
 
-    y_pred = LinearModel(lags=24, freq="1mo")(
+    y_pred = linear_model(lags=24, freq="1mo")(
         y=y_train,
         fh=28,
         X=X_train,
@@ -131,11 +131,11 @@ The `predict` method takes the forecast horizon `fh: int`, frequency alias `freq
 
 
 ```python
-from functime.forecasting import LinearModel
+from functime.forecasting import linear_model
 from functime.metrics import mase
 
 # Fit
-forecaster = LinearModel(lags=24, freq="1mo")
+forecaster = linear_model(lags=24, freq="1mo")
 forecaster.fit(y=y_train)
 
 # Predict
@@ -182,9 +182,9 @@ scores = mase(y_true=y_test, y_pred=y_pred, y_train=y_train)
 Every forecaster in `functime` supports exogenous regressors.
 
 ```python
-from functime.forecasting import LinearModel
+from functime.forecasting import linear_model
 
-forecaster = LinearModel(lags=24, fit_intercept=False, freq="1mo")
+forecaster = linear_model(lags=24, fit_intercept=False, freq="1mo")
 forecaster.fit(y=y_train, X=X_train)
 y_pred = forecaster.predict(fh=3, X=X_test)
 ```
@@ -200,19 +200,19 @@ y_pred = forecaster.predict(fh=3, X=X_test)
 `functime` supports three forecast strategies: `recursive`, `direct` multi-step, and a simple ensemble of both `recursive` and `direct`.
 
 ```python
-from functime.forecasting import LinearModel
+from functime.forecasting import linear_model
 
 # Recursive (Default)
-recursive_model = LinearModel(strategy="recursive")
+recursive_model = linear_model(strategy="recursive")
 y_pred_rec = recursive_model(y_train, fh)
 
 # Direct
 max_horizons = 12  # Number of direct models
-direct_model = = LinearModel(strategy="direct",max_horizons=max_horizons, freq="1mo")
+direct_model = = linear_model(strategy="direct",max_horizons=max_horizons, freq="1mo")
 y_pred_dir = recursive_model(y_train, fh)
 
 # Ensemble
-ensemble_model = LinearModel(strategy="ensemble", max_horizons=max_horizons, freq="1mo")
+ensemble_model = linear_model(strategy="ensemble", max_horizons=max_horizons, freq="1mo")
 y_pred_ens = ensemble_model(y=y_train, fh=3)
 ```
 where `max_horizons` is the number of models specific to each forecast horizon.
@@ -229,15 +229,15 @@ These forecasters conduct a search over possible models within `min_lags` and `m
 The best model is the model with the lowest average RMSE (root mean squared error) across splits.
 
 ```python
-from functime.forecasting import AutoLinearModel
+from functime.forecasting import auto_linear_model
 
 # Fit then predict
-forecaster = AutoLinearModel(min_lags=20, max_lags=24, freq="1mo")
+forecaster = auto_linear_model(min_lags=20, max_lags=24, freq="1mo")
 forecaster.fit(y=y_train, X=X_train)
 y_pred = forecaster.predict(fh=3, X=X_test)
 
 # Fit and predict
-y_pred = AutoLinearModel(min_lags=20, max_lags=24, freq="1mo")(
+y_pred = auto_linear_model(min_lags=20, max_lags=24, freq="1mo")(
     y=y_train,
     X=X_train,
     X_future=X_test,
@@ -259,7 +259,7 @@ The best model is the model with the lowest average RMSE (root mean squared erro
 
 ```python
 from flaml import tune
-from functime.forecasting import AutoLightGBM
+from functime.forecasting import auto_lightgbm
 
 # Specify search space, initial conditions, and time budget
 search_space = {
@@ -284,7 +284,7 @@ points_to_evaluate = [
 time_budget = 420
 
 # Fit model
-forecaster = AutoLightGBM(
+forecaster = auto_lightgbm(
     freq="1mo',
     min_lags=20,
     max_lags=24,
@@ -300,20 +300,24 @@ best_params = forecast.best_params
 
 ## Backtesting
 
+Every `forecaster` and `auto_forecaster` has a `backtest` method.
 `functime` supports both [`expanding_window_split`](https://docs.functime.ai/ref/cross-validation/#functime.cross_validation.expanding_window_split)
 and [`sliding_window_split`](https://docs.functime.ai/ref/cross-validation/#functime.cross_validation.sliding_window_split) for backtesting and cross-validation.
 
 ```python
+from functime.forecasting import linear_model
 
+forecaster = linear_model(lags=24, fit_intercept=False, freq="1mo")
+y_preds, y_residuals forecaster.backtest(
+    y=y_train,
+    X=X_train,
+    test_size=6,
+    step_size=1,
+    n_splits=3,
+    window_size=1,  # Only applicable if `strategy` equals "sliding"
+    strategy="expanding",
+)
 ```
-
-!!! tip  "Best Practices"
-
-    If latency and resource usage are priorities, we recommend the following design pattern:
-
-    ```python
-
-    ```
 
 ## Probablistic Forecasts
 
@@ -324,11 +328,11 @@ and [`sliding_window_split`](https://docs.functime.ai/ref/cross-validation/#func
 Supported by `LightGBM`, `XGBoost`, and `Catboost` forecasters and their AutoML equivalents.
 
 ```python
-from functime.forecasting import AutoLightGBM
+from functime.forecasting import auto_lightgbm
 
 # Forecasts at 10th and 90th percentile
-y_pred_10 = AutoLightGBM(alpha=0.1, freq="1d")(y=y_train, fh=28)
-y_pred_90 = AutoLightGBM(alpha=0.9, freq="1d")(y=y_train, fh=28)
+y_pred_10 = auto_lightgbm(alpha=0.1, freq="1d")(y=y_train, fh=28)
+y_pred_90 = auto_lightgbm(alpha=0.9, freq="1d")(y=y_train, fh=28)
 ```
 
 ### Conformal Prediction
@@ -337,18 +341,21 @@ y_pred_90 = AutoLightGBM(alpha=0.9, freq="1d")(y=y_train, fh=28)
 
 ```python
 from functime.conformal import conformalize
+from functime.forecasting import linear_model
 
-# First run backtest with `residualize` set to `True`
-y_preds, y_conformal_scores = backtest(
-    forecaster,
-    y=y_train,
-    X=X_train,
-    fh=3,
-    freq="1mo",
-    step_size=1,
-    n_splits=3
+forecaster = linear_model(lags=24, fit_intercept=False, freq="1mo")
+y_preds, y_residuals forecaster.backtest(y=y_train, X=X_train)
+# Take the mean prediction across backtest windows per entity
+y_pred = pl.concat(
+    [
+        y_pred,
+        y_preds.groupby(y_pred.columns[:2]).agg(
+            pl.col(y_pred.columns[-1])
+            .median()
+            .cast(y_pred.schema[y_pred.columns[-1]])
+        ),
+    ]
 )
-
 # Forecasts at 10th and 90th percentile
 y_pred_quantiles = conformalize(y_pred, y_resids, alphas=[0.1, 0.9])
 ```

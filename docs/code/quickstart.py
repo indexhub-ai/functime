@@ -5,7 +5,7 @@ import polars as pl
 
 from functime.cross_validation import train_test_split
 from functime.feature_extraction import add_calendar_effects, add_holiday_effects
-from functime.forecasting import AutoLightGBM, LightGBM
+from functime.forecasting import auto_lightgbm, lightgbm
 from functime.metrics import mase
 
 start_time = default_timer()
@@ -31,7 +31,7 @@ X_train, X_test = train_test_split(test_size)(X)
 
 # Univariate AutoML time-series fit with automated lags
 # and hyperparameter tuning
-auto_forecaster = AutoLightGBM(
+auto_forecaster = auto_lightgbm(
     freq=freq,
     test_size=test_size,
     min_lags=20,
@@ -52,7 +52,7 @@ best_params = auto_forecaster.best_params
 print(f"✨ Best parameters (y only):\n{json.dumps(best_params, indent=4)}")
 
 # Multivariate non-AutoML
-forecaster = LightGBM(**best_params)
+forecaster = lightgbm(**best_params)
 forecaster.fit(y=y_train)
 # Predict
 y_pred = forecaster.predict(fh=test_size)
@@ -66,16 +66,12 @@ print("💯 Scores (with X):\n", scores)
 best_params["max_horizons"] = test_size  # Override max_horizons
 best_params["strategy"] = "direct"  # Override strategy
 # Predict using the "functional" API
-y_pred = LightGBM(**best_params)(y=y_train, fh=test_size)
+y_pred = lightgbm(**best_params)(y=y_train, fh=test_size)
 
 # "Ensemble" strategy forecasting
 best_params["strategy"] = "ensemble"  # Override strategy
 # Predict using the "functional" API
-y_pred = LightGBM(**best_params)(y=y_train, fh=test_size)
-
-# Load fitted forecaster from deployment
-fitted_forecaster = AutoLightGBM.from_deployed(stub_id=auto_forecaster.stub_id)
-y_pred = fitted_forecaster.predict(fh=test_size)
+y_pred = lightgbm(**best_params)(y=y_train, fh=test_size)
 
 elapsed_time = default_timer() - start_time
 print(f"⏱️ Elapsed time: {elapsed_time}")
